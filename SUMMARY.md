@@ -5,4 +5,5 @@
 * [使用React和Antd开发Electron桌面小工具](shi-yong-react-heantd-kai-fa-electron-zhuo-mian-xiao-gong-ju.md)
 * [XLXS.JS用法](xlxsjsyong-fa.md)
 * [使用webpack进行版本管理工具\(webpack-plugin-auto-version\)](shi-yong-webpack-jin-xing-ban-ben-guan-li-gong-517728-webpack-plugin-auto-version.md)
+* [使用Nvm，在vscode继承终端警告:\[nvm is not compatible with the npm config "prefix" option\]](shi-yong-nvm-ff0c-zai-vscode-ji-cheng-zhong-duan-jing-544a3a5b-nvm-is-not-compatible-with-the-npm-config-prefix-option.md)
 
