@@ -9,4 +9,7 @@
 * [typescript 类型兼容问题\[Cannot invoke an expression whose type lacks a call signature\]](typescript-lei-xing-jian-rong-wen-98985b-cannot-invoke-an-expression-whose-typelacks-a-call-signature.md)
 * [Javascript 关于array的使用](javascript-guan-yu-array-de-shi-yong.md)
 * [webpack+handlebars+jquery进行远古开发](webpack+handlebars+jqueryjin-xing-yuan-gu-kai-fa.md)
+* [graphql 的在node-js上使用](graphql-de-zai-node-js-shang-shi-yong.md)
+* eslint 规则使用和禁用
+* [linux之mysql的使用](linuxzhi-mysql-de-shi-yong.md)
 
