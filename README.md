@@ -1,6 +1,4 @@
-# XLXS.JS的用法
+# 博文
 
 
-
-![](/assets/github.png)
 
