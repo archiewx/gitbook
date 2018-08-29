@@ -15,4 +15,5 @@
 * [从计数器开始开始的vue和vuex剖析使用](cong-ji-shuqi-kai-shi-kai-shi-de-vue-he-vuex-pou-xi-shi-yong.md)
 * [React懒加载使用进步](reactlan-jia-zai-shi-yong-jin-bu.md)
 * [使用ali-ice进行前端可视化开发](shi-yong-ali-ice-jin-xing-qian-duan-ke-shi-hua-kai-fa.md)
+* [Webpack4使用optimization.splitChunks](webpack4shi-yong-optimization-splitchunks.md)
 
