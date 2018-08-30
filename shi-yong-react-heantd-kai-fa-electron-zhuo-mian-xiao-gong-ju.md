@@ -22,11 +22,10 @@ electron和nw.js有的一拼，后来看到钉钉和ice都使用electron，甚�
 项目目录:
 
 ```txt
-
 ├── README.md
 ├── app.icns
 ├── dist # 打包目录
-│   └── electron
+│   └── electron
 ├── icons.png
 ├── index.html
 ├── logo.png
@@ -34,15 +33,13 @@ electron和nw.js有的一拼，后来看到钉钉和ice都使用electron，甚�
 ├── package.json
 ├── releases # 发行内容打包目录
 ├── src # 源码目录
-│   ├── main # 主线程开发文件 
-│   ├── renderer # 渲染进程开发文件
-│   └── uploads
+│   ├── main # 主线程开发文件 
+│   ├── renderer # 渲染进程开发文件
+│   └── uploads
 ├── static # 静态资源文件
 ├── test # 测试文件
 └── yarn.lock # yarn lock 文件
-
 ```
-
 
 ## webpack 配置
 
@@ -53,7 +50,6 @@ electron和nw.js有的一拼，后来看到钉钉和ice都使用electron，甚�
 renderer线程配置和普通网页配置其实差不多，首先查看
 
 ```js
-
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
@@ -153,27 +149,193 @@ if (!isDev()) {
 }
 
 module.exports = exports = renderConfig
-
-
 ```
 
-### main 配置
+我们配置中正常配置了webpack 的配置的mode(webpack4), resove, module,plugins
 
+### 
+
+### main 配置
 
 ## 开发脚本dev-runner.js
 
 ---
 
+```js
+/*
+ * @Author: zhenglfsir@gmail.com
+ * @Date: 2018-08-16 16:03:51
+ * @Last Modified by: zhenglfsir@gmail.com
+ * @Last Modified time: 2018-08-29 14:59:03
+ */
+const path = require('path')
+const webpack = require('webpack')
+const isDev = require('./isDev')
+
+const useEslint = true
+
+const mainConfig = {
+  mode: 'development',
+  entry: {
+    main: path.resolve(__dirname, '../src/main/main.js')
+  },
+  output: {
+    libraryTarget: 'commonjs2',
+    filename: '[name].js',
+    path: path.join(__dirname, '../dist/electron')
+  },
+  externals: [],
+  resolve: {
+    extensions: ['.js', '.json']
+  },
+  target: 'electron-main',
+  module: {
+    rules: (useEslint
+      ? [
+          {
+            test: /\.(js)$/,
+            enforce: 'pre',
+            exclude: /node_modules/
+          }
+        ]
+      : []
+    ).concat([
+      {
+        test: /\.(js)$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/
+      }
+    ])
+  },
+  plugins: [new webpack.NoEmitOnErrorsPlugin()]
+}
+
+if (isDev()) {
+  mainConfig.plugins.push(
+    new webpack.DefinePlugin({
+      __static: `${path.join(__dirname, '../static')}`.replace(/\\/g, '\\\\')
+    })
+  )
+} else {
+  mainConfig.mode = 'production'
+}
+
+module.exports = exports = mainConfig
+
+```
+
+## 
 
 ## 编辑脚本build.js
 
 ---
 
+```js
+/*
+ * @Author: zhenglfsir@gmail.com
+ * @Date: 2018-08-29 19:53:38
+ * @Last Modified by: zhenglfsir@gmail.com
+ * @Last Modified time: 2018-08-30 10:46:23
+ */
+process.env.NODE_ENV = 'production'
 
+// const childProcess = require('child_process')
+const webpack = require('webpack')
+const chalk = require('chalk')
+const Listr = require('listr')
+const execa = require('execa')
+const del = require('del')
+const path = require('path')
 
+const mainConfig = require('./webpack.config.main')
+const rendererConfig = require('./webpack.config.renderer')
+const packagerConfig = require('./packager.config')
 
+const doneLog = chalk.bgGreen.white(' DONE ') + ' '
+const errorLog = chalk.bgRed.white(' ERROR ') + ' '
+const okayLog = chalk.bgBlue.white(' OKAY ') + ' '
 
+const pack = function pack(config) {
+  return new Promise((resolve, reject) => {
+    webpack(config, (err, stats) => {
+      if (err) {
+        return reject(err)
+      } else if (stats.hasErrors()) {
+        let errors = ''
+        stats
+          .toString({
+            chunks: false,
+            colors: true,
+          })
+          .split(/\r?\n/)
+          .forEach(line => {
+            err += `    ${line}\n`
+          })
 
+        reject(err)
+      } else {
+        resolve(
+          stats.toString({
+            chunks: false,
+            colors: true,
+          })
+        )
+      }
+    })
+  })
+}
+
+const clean = args => del(args)
+
+const packagerApp = () => {
+  return new Promise((resolve, reject) => {
+    packager(packagerConfig, (err, appPaths) => {
+      if (err) {
+        console.log(`\n${errorLog}${chalk.yellow('`electron-packager`')} says...\n`)
+        console.log(err + '\n')
+        reject(err)
+      } else {
+        console.log(`\n${doneLog}\n`)
+        resolve()
+      }
+    })
+  })
+}
+
+const build = function build() {
+  const taskList = [
+    {
+      title: 'Clean Build Directory',
+      task: () => clean([path.resolve(__dirname, '../dist')]),
+    },
+    {
+      title: 'Renderer Build',
+      task: () => {
+        return pack(rendererConfig).then(result => {
+          result += result + '\n\n'
+          console.log('\n\n' + result)
+        })
+      },
+    },
+    {
+      title: 'Main Build',
+      task: () => {
+        return pack(mainConfig).then(result => {
+          result += result + '\n\n'
+          console.log('\n\n' + result)
+        })
+      },
+    }
+  ]
+  const tasks = new Listr(taskList)
+  tasks.run().catch(err => {
+    console.error(chalk.red(err))
+  })
+}
+
+build()
+
+```
 
 
 
