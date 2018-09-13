@@ -220,7 +220,7 @@ main 开发脚本配置配置需要target修改为 `electron-main`以外， 还�
 
 ## 开发脚本
 
-### 导入依赖
+### 导入依赖初始化全局变量
 
 ```js
 const chalk = require('chalk') // 为了让打印的有颜色
@@ -233,6 +233,10 @@ const WebpackDevServer = require('webpack-dev-server') // webpack开发服务器
 
 const mainConfig = require('./webpack.config.main') // main基本配置 
 const rendererConfig = require('./webpack.config.renderer') // renderer配置
+
+let hotMiddleware = null // 热重启中间件
+let electronProcess = null // electron线程 
+let manualRestart = false // 是否重启
 
 ```
 
@@ -355,6 +359,62 @@ const startMain = function startMain() {
 }
 
 ```
+
+开启main脚本构建开始下面工作:
+
+* 热更新增加main.dev.js(其中包含了electron的dev插件，例如react 和 vue工具)
+* webpack编译配置文件并生产complier对象
+* 监听webpack钩子 watchRun 如果修改，则发出compling命令
+* 监听文件改动，如果electronProcess存在则杀死electron线程并重新掉用startElectron()
+
+
+### electron 启动脚本
+
+```js
+
+const startElectron = function startElectron() {
+  electronProcess = childProcess.spawn(electron, ['.'])
+  electronProcess.stdout.on('data', data => {
+    console.log(chalk.blue(data))
+  })
+  electronProcess.stderr.on('data', data => {
+    console.log(chalk.red(data))
+  })
+  electronProcess.on('close', () => {
+    !manualRestart && process.exit()
+  })
+}
+
+```
+作用: 
+
+* 其从electron, 并给electronProcess 赋值
+* 监听electronProcess 线程 输出，错误和关闭
+
+### 开始启动初始化
+
+```js
+const init = function init() {
+  Promise.all([startRenderer(), startMain()])
+    .then(() => {
+      startElectron()
+    })
+    .catch(err => {
+      console.error(err)
+    })
+}
+
+init()
+
+```
+
+作用: 
+
+* `startRenderer()`, `startMain()` 都返回一个Promise，使用 Promise.all 对main 和 renderer启用
+* 编译完成后 启动 startElectron() 
+* 调用 init 开启整个编译
+
+上面就是开发脚本内容
 
 ## 构建脚本build.js
 
