@@ -151,23 +151,15 @@ if (!isDev()) {
 module.exports = exports = renderConfig
 ```
 
-我们配置中正常配置了webpack 的配置的mode(webpack4), resove, module,plugins
+我们配置中正常配置了webpack 的配置的mode\(webpack4\), resove, module,plugins
 
 ### 
 
 ### main 配置
 
-## 开发脚本dev-runner.js
-
 ---
 
 ```js
-/*
- * @Author: zhenglfsir@gmail.com
- * @Date: 2018-08-16 16:03:51
- * @Last Modified by: zhenglfsir@gmail.com
- * @Last Modified time: 2018-08-29 14:59:03
- */
 const path = require('path')
 const webpack = require('webpack')
 const isDev = require('./isDev')
@@ -221,22 +213,154 @@ if (isDev()) {
 }
 
 module.exports = exports = mainConfig
+```
+
+main 开发脚本配置配置需要target修改为 `electron-main`以外， 还需要增加babel-loader让我们的main线程也支持es6语法。
+接下来就开发我们dev-runner脚本，这个脚本为运行脚本，运行webpack 提供的API
+
+## 开发脚本
+
+### 导入依赖
+
+```js
+const chalk = require('chalk') // 为了让打印的有颜色
+const electron = require('electron') // 导入electron
+const path = require('path')
+const childProcess = require('child_process') // 运行命令
+const webpack = require('webpack')
+const webpackHotMiddleware = require('webpack-hot-middleware') // webpack中间件
+const WebpackDevServer = require('webpack-dev-server') // webpack开发服务器
+
+const mainConfig = require('./webpack.config.main') // main基本配置 
+const rendererConfig = require('./webpack.config.renderer') // renderer配置
 
 ```
 
-## 
+### 增加打印stat函数
 
-## 编辑脚本build.js
+```js
+const logStats = function logStats(proc, data) {
+  let log = ''
+
+  log += chalk.yellow.bold(`┏ ${proc} Process ${new Array(19 - proc.length + 1).join('-')}`)
+  log += '\n\n'
+
+  if (typeof data === 'object') {
+    data
+      .toString({
+        colors: true,
+        chunks: false,
+      })
+      .split(/\r?\n/)
+      .forEach(line => {
+        log += '  ' + line + '\n'
+      })
+  } else {
+    log += `  ${data}\n`
+  }
+
+  log += '\n' + chalk.yellow.bold(`┗ ${new Array(28 + 1).join('-')}`) + '\n'
+
+  console.log(log)
+}
+
+```
+
+stat内容就是webpack 增加 --progress 的内容
+
+### 增加开始renderer线程打包的脚本
+
+
+```js
+const startRenderer = function startRenderer() {
+  return new Promise(resolve => {
+    rendererConfig.entry = [path.join(__dirname, 'dev-client')].concat(
+      rendererConfig.entry.renderer
+    )
+    const complier = webpack(rendererConfig)
+    hotMiddleware = webpackHotMiddleware(complier, {
+      log: false,
+      heartbeat: 2500,
+    })
+    complier.hooks.compilation.tap('compilation', compilation => {
+      compilation.hooks.htmlWebpackPluginAfterEmit.tap(
+        'html-webpack-plugin-after-emit',
+        (data, cb) => {
+          hotMiddleware.publish({ action: 'reload' })
+        }
+      )
+    })
+    complier.hooks.done.tap('done', stats => {
+      logStats('Renderer', stats)
+    })
+    const webServer = new WebpackDevServer(complier, {
+      contentBase: path.join(__dirname, '../'),
+      quiet: true,
+      before: (app, ctx) => {
+        app.use(hotMiddleware)
+        ctx.middleware.waitUntilValid(() => {
+          resolve()
+        })
+      },
+    })
+    webServer.listen(9080)
+  })
+}
+
+```
+做的工作: 
+
+* 增加entry，将 `dev-client.js`增加到renderConfig的 entry中
+* 使用webpack 读取配置文件生成complier对象
+* 将热更新添加到 complier对象中
+* 监听 complier 对象的compilation 钩子和html-webpack-plugin的after-emit钩子，并告诉热更改中间件，修改html后reload 浏览器
+* 监听Renderer打包完成后，打印 stat
+* 最后启动webServer, 并将热更新中间件加入到devServer中
+* 监听9080端口
+
+### 增加Main 线程启动你那个脚本
+
+```js
+const startMain = function startMain() {
+  return new Promise(resolve => {
+    mainConfig.entry = [path.join(__dirname, '../src/main/main.dev.js')].concat(
+      mainConfig.entry.main
+    )
+
+    const complier = webpack(mainConfig)
+
+    complier.hooks.watchRun.tapAsync('watch-run', (compilation, done) => {
+      hotMiddleware.publish({ action: 'compiling' })
+      done()
+    })
+    complier.watch({}, (err, stats) => {
+      if (err) {
+        console.log(err)
+        return
+      }
+      logStats('Main', stats)
+
+      if (electronProcess && electronProcess.kill) {
+        process.kill(electronProcess.pid)
+        manualRestart = true
+        electronProcess = null
+        startElectron()
+        setTimeout(() => {
+          manualRestart = false
+        }, 5000)
+      }
+      resolve()
+    })
+  })
+}
+
+```
+
+## 构建脚本build.js
 
 ---
 
 ```js
-/*
- * @Author: zhenglfsir@gmail.com
- * @Date: 2018-08-29 19:53:38
- * @Last Modified by: zhenglfsir@gmail.com
- * @Last Modified time: 2018-08-30 10:46:23
- */
 process.env.NODE_ENV = 'production'
 
 // const childProcess = require('child_process')
@@ -334,7 +458,6 @@ const build = function build() {
 }
 
 build()
-
 ```
 
 
