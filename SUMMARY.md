@@ -16,4 +16,5 @@
 * [React懒加载使用进步](reactlan-jia-zai-shi-yong-jin-bu.md)
 * [使用ali-ice进行前端可视化开发](shi-yong-ali-ice-jin-xing-qian-duan-ke-shi-hua-kai-fa.md)
 * [Webpack4使用optimization.splitChunks](webpack4shi-yong-optimization-splitchunks.md)
+* [rollup 常规配置和使用](rollup-chang-gui-pei-zhi-he-shi-yong.md)
 
