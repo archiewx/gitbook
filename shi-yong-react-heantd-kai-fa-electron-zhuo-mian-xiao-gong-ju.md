@@ -418,12 +418,11 @@ init()
 
 ## 构建脚本build.js
 
----
+### 导入和初始化变量
 
 ```js
 process.env.NODE_ENV = 'production'
 
-// const childProcess = require('child_process')
 const webpack = require('webpack')
 const chalk = require('chalk')
 const Listr = require('listr')
@@ -439,6 +438,11 @@ const doneLog = chalk.bgGreen.white(' DONE ') + ' '
 const errorLog = chalk.bgRed.white(' ERROR ') + ' '
 const okayLog = chalk.bgBlue.white(' OKAY ') + ' '
 
+```
+
+### 抽象打包函数
+
+```js
 const pack = function pack(config) {
   return new Promise((resolve, reject) => {
     webpack(config, (err, stats) => {
@@ -468,24 +472,13 @@ const pack = function pack(config) {
     })
   })
 }
+```
 
-const clean = args => del(args)
+因为后续需要接受两个打包的配置文件，所以接受一个config配置参数，并将stat打印出来
 
-const packagerApp = () => {
-  return new Promise((resolve, reject) => {
-    packager(packagerConfig, (err, appPaths) => {
-      if (err) {
-        console.log(`\n${errorLog}${chalk.yellow('`electron-packager`')} says...\n`)
-        console.log(err + '\n')
-        reject(err)
-      } else {
-        console.log(`\n${doneLog}\n`)
-        resolve()
-      }
-    })
-  })
-}
+### 构建build 脚本
 
+```js
 const build = function build() {
   const taskList = [
     {
@@ -518,7 +511,13 @@ const build = function build() {
 }
 
 build()
+
 ```
 
+使用listr作为任务序列，①清理构建目录 ②renderer线程构建 ③ main线程构建 ④ 执行task，如果出错则打印出来
+
+## 总结
+
+上面就是使用js脚本进行开发，功能很强大，但是在build后有一些问题，待发现。
 
 
