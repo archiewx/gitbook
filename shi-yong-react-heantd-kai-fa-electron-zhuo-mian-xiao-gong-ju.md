@@ -1,7 +1,6 @@
 ---
 categories:
-  - name: electron
-    img: 'https://'
+  - name: javascript
 description: electron和nw.js有的一拼，后来看到钉钉和ice都使用electron，甚至社区也在使用electron开发了atom游戏的编辑器
 ---
 
